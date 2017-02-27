@@ -168,7 +168,7 @@ def getUserAPIData(envId=None):
 def main():
 
         #read session key from splunkd
-        #sessionKey = sessionKey = splunk.auth.getSessionKey('admin','changeme')
+        #sessionKey = splunk.auth.getSessionKey('admin','changeme')
         sessionKey = sys.stdin.readline().strip()
         if len(sessionKey) == 0:
            sys.stderr.write("DATALOADER_SCRIPT_ERROR - Session Key NOT received from splunkd. Please set passAuth in inputs.conf\n")
