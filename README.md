@@ -15,7 +15,16 @@ In a distributed environment, install the app on a standalone/clustered Search H
 
 To uninstall the app, delete the directory $SPLUNK_HOME/etc/apps/scalr_app_for_splunk and restart Splunk.
 
-###More Information:
+####More Information:
 * This project is open source - https://github.com/dmanojbaba/scalr_app_for_splunk
 * The app uses Scalr APIv2 Python client from https://github.com/scalr-tutorials/apiv2-examples/tree/master/python
 * The app also uses Python datetime, json, pytz and requests libraries
+
+##Version History:
+#####Version: 1.0.2
+- Scalr API Secret is now encrypted and stored in passwords.conf
+- Storing API Secret as clear text in scalr.conf is now deprecated
+- Updated python print statement with print() function
+
+#####Version: 1.0.0
+- Initial Release
