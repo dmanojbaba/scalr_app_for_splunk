@@ -1,7 +1,7 @@
 <form>
   <label>Overview</label>
   <search id="baseOverviewSearch">
-    <query>index=scalr sourcetype=scalr (request.api_endpoint="account/environments" OR request.api_endpoint="user/farms" OR request.api_endpoint="account/roles" OR request.api_endpoint="user/roles" OR request.api_endpoint="user/farms/farm-roles" OR request.api_endpoint="user/images" OR request.api_endpoint="user/servers") 
+    <query>index=scalr sourcetype=scalr (request.api_endpoint="account/environments" OR request.api_endpoint="user/farms" OR request.api_endpoint="user/roles" OR request.api_endpoint="user/farms/farm-roles" OR request.api_endpoint="user/images" OR request.api_endpoint="user/servers") 
 | dedup request.api_endpoint, response.id 
 | stats count by request.api_endpoint</query>
     <earliest>$field_time.earliest$</earliest>

@@ -3,8 +3,12 @@ import json
 import requests
 import datetime
 import pytz
-import splunk.entity as entity
 from scalr_python_api.client import ScalrApiClient
+
+try:
+   import splunk.entity as entity
+except ImportError:
+   import splunk_dummy.entity as entity
 
 myapp = 'scalr_app_for_splunk'
 #datetime_now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S %z')
@@ -17,19 +21,20 @@ def str2bool(v):
 
 def getCredentials(sessionKey):
         try:
-           entities = entity.getEntities(['scalr_setup', 'api_input'], namespace=myapp, owner='nobody', sessionKey=sessionKey)
-        except Exception, e:
+           api_obj = entity.getEntity('scalr_setup/api_input', 'api', namespace=myapp, owner='nobody', sessionKey=sessionKey)
+           api_secret = entity.getEntity('storage/passwords', 'api:secret', namespace=myapp, owner='nobody', sessionKey=sessionKey)
+        except Exception as e:
            sys.stderr.write("DATALOADER_SCRIPT_ERROR - Could not get Scalr API Credentials from Splunk. Exception: %s\n" % (str(e)))
            exit(2)
 
-        api_obj = entities['api']
-        #print api_obj
-        return api_obj['url'], api_obj['key'], api_obj['secret'], str2bool(api_obj['verify_ssl'])
+        #print(api_obj)
+        #print(api_secret)
+        return api_obj['url'], api_obj['key'], api_secret['clear_password'], str2bool(api_obj['verify_ssl'])
 
 def getFetch(api_endpoint):
         try:
            result = api_client.fetch(api_endpoint,verify=api_verify_ssl)
-        except Exception, e:
+        except Exception as e:
            sys.stderr.write("DATALOADER_SCRIPT_ERROR - Could not access {}. Exception: {}\n".format(api_endpoint,str(e)))
         else:
            return result
@@ -38,18 +43,18 @@ def getList(api_endpoint):
         result = []
         try:
            result = api_client.list(api_endpoint,verify=api_verify_ssl)
-        except Exception, e:
+        except Exception as e:
            sys.stderr.write("DATALOADER_SCRIPT_ERROR - Could not access {}. Exception: {}\n".format(api_endpoint,str(e)))
         return result
 
 def prettyPrintData(api_endpoint,json_data,param=''):
         if json_data != None:
-           print '{{"api_reqTime": "{}", "request": {{"api_endpoint": "{}"{}}}, "response": {}}}' \
-           .format(datetime_now_str,api_endpoint,param,json.dumps(json_data))
+           print('{{"api_reqTime": "{}", "request": {{"api_endpoint": "{}"{}}}, "response": {}}}' \
+           .format(datetime_now_str,api_endpoint,param,json.dumps(json_data)))
 
 def prettyPrintList(api_endpoint,json_list,param=''):
-        # print "Found {0} records like:".format(len(json_list))
-        # print json_list
+        # print("Found {0} records like:".format(len(json_list)))
+        # print(json_list)
         if json_list != None:
            for i in json_list:
               prettyPrintData(api_endpoint,i,param)
@@ -163,7 +168,7 @@ def getUserAPIData(envId=None):
 def main():
 
         #read session key from splunkd
-        #sessionKey = "test_sessionKey_comes_here"
+        #sessionKey = sessionKey = splunk.auth.getSessionKey('admin','changeme')
         sessionKey = sys.stdin.readline().strip()
         if len(sessionKey) == 0:
            sys.stderr.write("DATALOADER_SCRIPT_ERROR - Session Key NOT received from splunkd. Please set passAuth in inputs.conf\n")
