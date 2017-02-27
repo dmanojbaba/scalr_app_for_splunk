@@ -21,7 +21,7 @@ To uninstall the app, delete the directory $SPLUNK_HOME/etc/apps/scalr_app_for_s
 * The app also uses Python datetime, json, pytz and requests libraries
 
 ##Version History:
-#####Version: 1.0.2
+#####Version: 1.0.4
 - Scalr API Secret is now encrypted and stored in passwords.conf
 - Storing API Secret as clear text in scalr.conf is now deprecated
 - Updated python print statement with print() function
