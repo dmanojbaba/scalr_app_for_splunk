@@ -1,0 +1,168 @@
+<form>
+  <label>Farms</label>
+  <search id="baseFarmSearch">
+    <query>index=scalr sourcetype=scalr request.api_endpoint="user/farms" request.req_envId="$field_envId$"
+| dedup response.id 
+| stats count by response.status</query>
+    <earliest>$field_time.earliest$</earliest>
+    <latest>$field_time.latest$</latest>
+  </search>
+  <fieldset submitButton="false">
+    <input type="dropdown" token="field_envId">
+      <label>Environment</label>
+      <fieldForLabel>response.name</fieldForLabel>
+      <fieldForValue>response.id</fieldForValue>
+      <search>
+        <query>index=scalr sourcetype=scalr request.api_endpoint="account/environments" | dedup response.id | table response.id, response.name | sort response.name</query>
+        <earliest>$field_time.earliest$</earliest>
+        <latest>$field_time.latest$</latest>
+      </search>
+      <choice value="*">All</choice>
+      <default>*</default>
+    </input>
+    <input type="time" token="field_time">
+      <label>Time Range</label>
+      <default>
+        <earliest>-24h@h</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <title>Overview</title>
+      <single>
+        <search base="baseFarmSearch">
+          <query>| addcoltotals label="Total" labelfield=response.status | search response.status="Total" | fields count | appendpipe [|stats count | where count=0]</query>
+        </search>
+        <option name="underLabel">FARMS</option>
+      </single>
+      <single>
+        <search base="baseFarmSearch">
+          <query>| search response.status="running" | fields count | appendpipe [|stats count | where count=0]</query>
+        </search>
+        <option name="rangeColors">["0x65a637","0x65a637"]</option>
+        <option name="rangeValues">[1]</option>
+        <option name="underLabel">RUNNING</option>
+        <option name="useColors">1</option>
+      </single>
+      <single>
+        <search base="baseFarmSearch">
+          <query>| search response.status="terminated" | fields count | appendpipe [|stats count | where count=0]</query>
+        </search>
+        <option name="rangeColors">["0xd93f3c","0xd93f3c"]</option>
+        <option name="rangeValues">[1]</option>
+        <option name="underLabel">TERMINATED</option>
+        <option name="useColors">1</option>
+      </single>
+      <single>
+        <search>
+          <query>index=scalr sourcetype=scalr request.api_endpoint="user/farms" request.req_envId="$field_envId$"
+| dedup response.id 
+| stats dc(response.owner.email)</query>
+          <earliest>$field_time.earliest$</earliest>
+          <latest>$field_time.latest$</latest>
+        </search>
+        <option name="underLabel">OWNERS</option>
+      </single>
+      <single>
+        <search>
+          <query>index=scalr sourcetype=scalr request.api_endpoint="user/farms/farm-roles" request.req_envId="$field_envId$"
+| dedup response.id 
+| stats count</query>
+          <earliest>$field_time.earliest$</earliest>
+          <latest>$field_time.latest$</latest>
+        </search>
+        <option name="underLabel">FARM ROLES</option>
+        <option name="drilldown">all</option>
+        <option name="rangeColors">["0x6db7c6","0x6db7c6"]</option>
+        <option name="rangeValues">[1]</option>
+        <option name="useColors">1</option>
+        <drilldown>
+          <link>farm_roles</link>
+        </drilldown>
+      </single>
+      <single>
+        <search>
+          <query>index=scalr sourcetype=scalr request.api_endpoint="user/farms/servers" request.req_envId="$field_envId$"
+| dedup response.id 
+| stats count</query>
+          <earliest>$field_time.earliest$</earliest>
+          <latest>$field_time.latest$</latest>
+        </search>
+        <option name="underLabel">SERVERS</option>
+        <option name="drilldown">all</option>
+        <option name="rangeColors">["0x6db7c6","0x6db7c6"]</option>
+        <option name="rangeValues">[1]</option>
+        <option name="useColors">1</option>
+        <drilldown>
+          <link>servers</link>
+        </drilldown>
+      </single>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Farms by Status</title>
+      <chart>
+        <search base="baseFarmSearch">
+          <query></query>
+        </search>
+        <option name="charting.chart">pie</option>
+        <option name="charting.drilldown">none</option>
+      </chart>
+    </panel>
+    <panel>
+      <title>Farms by Project</title>
+      <chart>
+        <search>
+          <query>index=scalr sourcetype=scalr request.api_endpoint="user/farms" request.req_envId="$field_envId$" 
+| dedup response.id 
+| stats count as Count by response.project.id 
+| join response.project.id 
+    [ search index=scalr sourcetype=scalr request.api_endpoint="user/projects" 
+    | dedup response.id 
+    | table response.id, response.name 
+    | rename response.id as response.project.id, response.name as ProjectName] 
+| fields ProjectName, Count</query>
+          <earliest>$field_time.earliest$</earliest>
+          <latest>$field_time.latest$</latest>
+        </search>
+        <option name="charting.chart">pie</option>
+        <option name="charting.drilldown">none</option>
+      </chart>
+    </panel>
+    <panel>
+      <title>Top 10 Farm Owners</title>
+      <chart>
+        <search>
+          <query>index=scalr sourcetype=scalr request.api_endpoint="user/farms" request.req_envId="$field_envId$"
+| dedup response.id 
+| top limit=10 response.owner.email</query>
+          <earliest>$field_time.earliest$</earliest>
+          <latest>$field_time.latest$</latest>
+        </search>
+        <option name="charting.chart">pie</option>
+        <option name="charting.drilldown">none</option>
+        <option name="height">248</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table>
+        <title>User Farms</title>
+        <search>
+          <query>index=scalr sourcetype=scalr request.api_endpoint="user/farms" request.req_envId="$field_envId$"
+| dedup response.id 
+| table response.id, response.name, response.owner.email, response.teams{}.name, response.status 
+| rename response.id as farmId, response.name as Name, response.owner.email as Owner, response.teams{}.name as Teams, response.status as Status
+| sort farmId</query>
+          <earliest>$field_time.earliest$</earliest>
+          <latest>$field_time.latest$</latest>
+        </search>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+  </row>
+</form>

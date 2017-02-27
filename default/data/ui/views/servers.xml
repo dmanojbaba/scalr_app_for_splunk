@@ -1,0 +1,184 @@
+<form>
+  <label>Servers</label>
+  <search id="baseServerSearch">
+    <query>index=scalr sourcetype=scalr request.api_endpoint="user/servers" request.req_envId="$field_envId$" response.farm.id="$field_farmId$"
+| dedup response.id 
+| stats count as Count by response.status
+| rename response.status as Status</query>
+    <earliest>$field_time.earliest$</earliest>
+    <latest>$field_time.latest$</latest>
+  </search>
+  <fieldset submitButton="false">
+    <input type="dropdown" token="field_envId">
+      <label>Environment</label>
+      <fieldForLabel>response.name</fieldForLabel>
+      <fieldForValue>response.id</fieldForValue>
+      <search>
+        <query>index=scalr sourcetype=scalr request.api_endpoint="account/environments" | dedup response.id | table response.id, response.name | sort response.name</query>
+        <earliest>$field_time.earliest$</earliest>
+        <latest>$field_time.latest$</latest>
+      </search>
+      <choice value="*">All</choice>
+      <default>*</default>
+    </input>
+    <input type="dropdown" token="field_farmId">
+      <label>Farm</label>
+      <fieldForLabel>response.name</fieldForLabel>
+      <fieldForValue>response.id</fieldForValue>
+      <search>
+        <query>index=scalr sourcetype=scalr request.api_endpoint="user/farms" request.req_envId="$field_envId$" | dedup response.id | table response.id, response.name | sort response.name</query>
+        <earliest>$field_time.earliest$</earliest>
+        <latest>$field_time.latest$</latest>
+      </search>
+      <choice value="*">All</choice>
+      <default>*</default>
+    </input>
+    <input type="time" token="field_time">
+      <label>Time Range</label>
+      <default>
+        <earliest>-24h@h</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <title>Overview</title>
+      <single>
+        <search base="baseServerSearch">
+          <query>| addcoltotals label="Total" labelfield=Status | search Status="Total" | fields Count | appendpipe [|stats count as Count | where Count=0]</query>
+        </search>
+        <option name="underLabel">Servers</option>
+      </single>
+      <single>
+        <search base="baseServerSearch">
+          <query>| search Status="running" | fields Count | appendpipe [|stats count as Count | where Count=0]</query>
+        </search>
+        <option name="rangeColors">["0x65a637","0x65a637"]</option>
+        <option name="rangeValues">[1]</option>
+        <option name="underLabel">Running</option>
+        <option name="useColors">1</option>
+      </single>
+    </panel>
+    <panel>
+      <title>Servers by Status</title>
+      <chart>
+        <search base="baseServerSearch">
+          <query>| sort - Count</query>
+        </search>
+        <option name="charting.chart">pie</option>
+        <option name="charting.drilldown">none</option>
+      </chart>
+    </panel>
+    <panel>
+      <title>Servers by CloudPlatform</title>
+      <chart>
+        <search>
+          <query>index=scalr sourcetype=scalr request.api_endpoint="user/servers" request.req_envId="$field_envId$" response.farm.id="$field_farmId$"
+| dedup response.id 
+| stats count as Count by response.cloudPlatform
+| rename response.cloudPlatform as cloudPlatform
+| sort - Count</query>
+          <earliest>$field_time.earliest$</earliest>
+          <latest>$field_time.latest$</latest>
+        </search>
+        <option name="charting.chart">pie</option>
+        <option name="charting.drilldown">none</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Servers by InstanceType</title>
+      <chart>
+        <search>
+          <query>index=scalr sourcetype=scalr request.api_endpoint="user/servers" request.req_envId="$field_envId$" response.farm.id="$field_farmId$"
+| dedup response.id 
+| stats count as Count by response.type
+| rename response.type as instanceType
+| sort - Count</query>
+          <earliest>$field_time.earliest$</earliest>
+          <latest>$field_time.latest$</latest>
+        </search>
+        <option name="charting.chart">pie</option>
+        <option name="charting.drilldown">none</option>
+      </chart>
+    </panel>
+    <panel>
+      <title>Server Launch Reason</title>
+      <chart>
+        <search>
+          <query>index=scalr sourcetype=scalr request.api_endpoint="user/servers" request.req_envId="$field_envId$" response.farm.id="$field_farmId$"
+| dedup response.id 
+| stats count as Count by response.launchReason
+| rename response.launchReason as launchReason
+| sort - Count</query>
+          <earliest>$field_time.earliest$</earliest>
+          <latest>$field_time.latest$</latest>
+        </search>
+        <option name="charting.chart">pie</option>
+        <option name="charting.drilldown">none</option>
+      </chart>
+    </panel>
+    <panel>
+      <title>Server Launch Trend</title>
+      <input type="dropdown" token="field_span">
+        <label>Timechart Span</label>
+        <choice value="1h">Hourly</choice>
+        <choice value="1d">Daily</choice>
+        <choice value="1w">Weekly</choice>
+        <choice value="1mon">Monthly</choice>
+        <default>1d</default>
+      </input>
+      <chart>
+        <search>
+          <query>index=scalr sourcetype=scalr request.api_endpoint="user/servers" request.req_envId="$field_envId$" response.farm.id="$field_farmId$" 
+| dedup response.id 
+| table request.req_envId, response.launched 
+| rename request.req_envId as envId, response.launched as launched 
+| join envId 
+    [ search index=scalr sourcetype=scalr request.api_endpoint="account/environments" 
+    | dedup response.id 
+    | table response.id, response.name 
+    | rename response.id as envId, response.name as envName] 
+| eval _time=strptime(launched,"%Y-%m-%dT%H:%M:%SZ") 
+| timechart span=$field_span$ count by envName</query>
+          <earliest>$field_time.earliest$</earliest>
+          <latest>$field_time.latest$</latest>
+        </search>
+        <option name="charting.axisTitleX.visibility">collapsed</option>
+        <option name="charting.axisTitleY.visibility">collapsed</option>
+        <option name="charting.chart">line</option>
+        <option name="charting.drilldown">none</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table>
+        <title>User Servers</title>
+        <search>
+          <query>index=scalr sourcetype=scalr request.api_endpoint="user/servers" request.req_envId="$field_envId$" response.farm.id="$field_farmId$"
+| dedup response.id 
+| table response.id, response.hostname, response.cloudPlatform, response.cloudLocation, response.type, response.farm.id, response.farmRole.id, response.launchReason, response.launchedBy.email, response.launched, response.privateIp{}, response.publicIp{}, response.status 
+| join response.farm.id 
+    [ search index=scalr sourcetype=scalr request.api_endpoint="user/farms" 
+    | dedup response.id 
+    | table response.id, response.name 
+    | rename response.id as response.farm.id, response.name as response.FarmName]
+| join response.farmRole.id 
+    [ search index=scalr sourcetype=scalr request.api_endpoint="user/farms/farm-roles" request.req_envId="$field_envId$" response.farm.id="$field_farmId$"
+    | dedup response.id 
+    | table response.id, response.alias 
+    | rename response.id as response.farmRole.id, response.alias as FarmRoleAlias]
+| sort - response.launched
+| fields - response.farm.id, response.farmRole.id
+| rename response.* as *</query>
+          <earliest>$field_time.earliest$</earliest>
+          <latest>$field_time.latest$</latest>
+        </search>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+  </row>
+</form>

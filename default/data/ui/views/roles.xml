@@ -1,0 +1,94 @@
+<form>
+  <label>Roles</label>
+  <fieldset submitButton="false">
+    <input type="dropdown" token="field_envId">
+      <label>Environment</label>
+      <fieldForLabel>response.name</fieldForLabel>
+      <fieldForValue>response.id</fieldForValue>
+      <search>
+        <query>index=scalr sourcetype=scalr request.api_endpoint="account/environments" | dedup response.id | table response.id, response.name | sort response.name</query>
+        <earliest>$field_time.earliest$</earliest>
+        <latest>$field_time.latest$</latest>
+      </search>
+      <choice value="*">All</choice>
+      <default>*</default>
+    </input>
+    <input type="time" token="field_time">
+      <label>Time Range</label>
+      <default>
+        <earliest>-24h@h</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <title>Overview</title>
+      <single>
+        <search>
+          <query>index=scalr sourcetype=scalr request.api_endpoint="account/roles"
+| dedup response.id 
+| stats count</query>
+          <earliest>$field_time.earliest$</earliest>
+          <latest>$field_time.latest$</latest>
+        </search>
+        <option name="underLabel">Account Roles</option>
+      </single>
+      <single>
+        <search>
+          <query>index=scalr sourcetype=scalr request.api_endpoint="user/roles" request.req_envId="$field_envId$"
+| dedup response.id 
+| stats count</query>
+          <earliest>$field_time.earliest$</earliest>
+          <latest>$field_time.latest$</latest>
+        </search>
+        <option name="underLabel">User Roles</option>
+      </single>
+      <single>
+        <search>
+          <query>index=scalr sourcetype=scalr request.api_endpoint="user/roles" request.req_envId="$field_envId$" response.useScalrAgent="false"
+| dedup response.id 
+| stats count</query>
+          <earliest>$field_time.earliest$</earliest>
+          <latest>$field_time.latest$</latest>
+        </search>
+        <option name="rangeColors">["0xf7bc38","0xf7bc38"]</option>
+        <option name="rangeValues">[1]</option>
+        <option name="underLabel">NO ScalrAgent</option>
+        <option name="useColors">1</option>
+      </single>
+    </panel>
+    <panel>
+      <title>Top 10 OS IDs</title>
+      <chart>
+        <search>
+          <query>index=scalr sourcetype=scalr request.api_endpoint="user/roles" request.req_envId="$field_envId$"
+| dedup response.id 
+| top 10 response.os.id
+| rename response.os.id as OS_ID, count as Count</query>
+          <earliest>$field_time.earliest$</earliest>
+          <latest>$field_time.latest$</latest>
+        </search>
+        <option name="charting.chart">pie</option>
+        <option name="charting.drilldown">none</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table>
+        <title>User Roles</title>
+        <search>
+          <query>index=scalr sourcetype=scalr request.api_endpoint="user/roles" request.req_envId="$field_envId$"
+| dedup response.id 
+| table response.id, response.name, response.quickStartGroup, response.os.id, response.scope, response.useScalrAgent, response.builtinAutomation{} 
+| rename response.* as * 
+| sort id</query>
+          <earliest>$field_time.earliest$</earliest>
+          <latest>$field_time.latest$</latest>
+        </search>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+  </row>
+</form>

@@ -1,0 +1,14 @@
+<nav search_view="search" color="#4779ab">
+  <view name="overview" default='true' />
+  <view name="farms" />
+  <view name="roles" />
+  <view name="farm_roles" />
+  <view name="images" />
+  <view name="servers" />
+  <collection label="Search">
+    <view name="search" />
+    <view name="reports" />
+    <view name="alerts" />
+    <view name="dashboards" />
+  </collection>
+</nav>

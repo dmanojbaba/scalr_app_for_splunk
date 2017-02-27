@@ -1,0 +1,164 @@
+<form>
+  <label>Images</label>
+  <fieldset submitButton="false">
+    <input type="dropdown" token="field_cp">
+      <label>Cloud Platform</label>
+      <fieldForLabel>response.cloudPlatform</fieldForLabel>
+      <fieldForValue>response.cloudPlatform</fieldForValue>
+      <search>
+        <query>index=scalr sourcetype=scalr request.api_endpoint="user/images" | dedup response.cloudPlatform | table response.cloudPlatform | sort response.cloudPlatform</query>
+        <earliest>$field_time.earliest$</earliest>
+        <latest>$field_time.latest$</latest>
+      </search>
+      <choice value="*">All</choice>
+      <default>*</default>
+    </input>
+    <input type="time" token="field_time">
+      <label>Time Range</label>
+      <default>
+        <earliest>-24h@h</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <title>Overview</title>
+      <single>
+        <search>
+          <query>index=scalr sourcetype=scalr request.api_endpoint="account/images"
+| dedup response.id 
+| stats count</query>
+          <earliest>$field_time.earliest$</earliest>
+          <latest>$field_time.latest$</latest>
+        </search>
+        <option name="underLabel">Account Images</option>
+      </single>
+      <single>
+        <search>
+          <query>index=scalr sourcetype=scalr request.api_endpoint="user/images" response.cloudPlatform="$field_cp$"
+| dedup response.id 
+| stats count</query>
+          <earliest>$field_time.earliest$</earliest>
+          <latest>$field_time.latest$</latest>
+        </search>
+        <option name="underLabel">User Images</option>
+      </single>
+      <single>
+        <search>
+          <query>index=scalr sourcetype=scalr request.api_endpoint="user/images" response.cloudPlatform="$field_cp$" response.lastUsed="null"
+| dedup response.id 
+| stats count</query>
+          <earliest>$field_time.earliest$</earliest>
+          <latest>$field_time.latest$</latest>
+        </search>
+        <option name="rangeColors">["0xf7bc38","0xf7bc38"]</option>
+        <option name="rangeValues">[1]</option>
+        <option name="underLabel">Images Never Used</option>
+        <option name="useColors">1</option>
+      </single>
+      <single>
+        <search>
+          <query>index=scalr sourcetype=scalr request.api_endpoint="user/os"
+| dedup response.id 
+| stats count</query>
+          <earliest>$field_time.earliest$</earliest>
+          <latest>$field_time.latest$</latest>
+        </search>
+        <option name="underLabel">User OSes</option>
+      </single>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>User Images by CloudPlatform</title>
+      <chart>
+        <search>
+          <query>index=scalr sourcetype=scalr request.api_endpoint="user/images" response.cloudPlatform="$field_cp$"
+| dedup response.id 
+| stats count as Count by response.cloudPlatform
+| rename response.cloudPlatform as CloudPlatform</query>
+          <earliest>$field_time.earliest$</earliest>
+          <latest>$field_time.latest$</latest>
+        </search>
+        <option name="charting.chart">pie</option>
+        <option name="charting.drilldown">none</option>
+      </chart>
+    </panel>
+    <panel>
+      <title>Top 10 OS IDs</title>
+      <chart>
+        <search>
+          <query>index=scalr sourcetype=scalr request.api_endpoint="user/images" response.cloudPlatform="$field_cp$"
+| dedup response.id 
+| top 10 response.os.id
+| rename response.os.id as OS_ID, count as Count</query>
+          <earliest>$field_time.earliest$</earliest>
+          <latest>$field_time.latest$</latest>
+        </search>
+        <option name="charting.chart">pie</option>
+        <option name="charting.drilldown">none</option>
+      </chart>
+    </panel>
+    <panel>
+      <title>Images Added Trend</title>
+      <input type="dropdown" token="field_span">
+        <label>Timechart Span</label>
+        <choice value="1h">Hourly</choice>
+        <choice value="1d">Daily</choice>
+        <choice value="1w">Weekly</choice>
+        <choice value="1mon">Monthly</choice>
+        <default>1mon</default>
+      </input>
+      <chart>
+        <search>
+          <query>index=scalr sourcetype=scalr request.api_endpoint="user/images" response.cloudPlatform="$field_cp$" response.added!="null"
+| dedup response.id 
+| table response.id, response.added 
+| rename response.id as id, response.added as added 
+| eval _time=strptime(added,"%Y-%m-%dT%H:%M:%SZ") 
+| timechart span=$field_span$ count</query>
+          <earliest>$field_time.earliest$</earliest>
+          <latest>$field_time.latest$</latest>
+        </search>
+        <option name="charting.axisTitleX.visibility">collapsed</option>
+        <option name="charting.axisTitleY.visibility">collapsed</option>
+        <option name="charting.chart">line</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.legend.placement">none</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table>
+        <title>User Images</title>
+        <search>
+          <query>index=scalr sourcetype=scalr request.api_endpoint="user/images" response.cloudPlatform="$field_cp$"
+| dedup request.api_endpoint, response.id 
+| table response.id, response.name, response.architecture,response.cloudImageId, response.cloudLocation, response.cloudPlatform, response.os.id, response.added, response.lastUsed, response.scope, response.status
+| rename response.* as *</query>
+          <earliest>$field_time.earliest$</earliest>
+          <latest>$field_time.latest$</latest>
+        </search>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table>
+        <title>User OSes</title>
+        <search>
+          <query>index=scalr sourcetype=scalr request.api_endpoint="user/os" 
+| dedup response.id 
+| table response.id, response.name, response.family, response.generation, response.version 
+| rename response.* as *</query>
+          <earliest>$field_time.earliest$</earliest>
+          <latest>$field_time.latest$</latest>
+        </search>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+  </row>
+</form>

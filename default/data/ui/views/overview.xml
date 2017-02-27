@@ -1,0 +1,201 @@
+<form>
+  <label>Overview</label>
+  <search id="baseOverviewSearch">
+    <query>index=scalr sourcetype=scalr (request.api_endpoint="account/environments" OR request.api_endpoint="user/farms" OR request.api_endpoint="account/roles" OR request.api_endpoint="user/roles" OR request.api_endpoint="user/farms/farm-roles" OR request.api_endpoint="user/images" OR request.api_endpoint="user/servers") 
+| dedup request.api_endpoint, response.id 
+| stats count by request.api_endpoint</query>
+    <earliest>$field_time.earliest$</earliest>
+    <latest>$field_time.latest$</latest>
+  </search>
+  <fieldset submitButton="false">
+    <input type="time" token="field_time">
+      <label>Time Range</label>
+      <default>
+        <earliest>-24h@h</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <title>Overview</title>
+      <single>
+        <search base="baseOverviewSearch">
+          <query>| search request.api_endpoint="account/environments" | fields count | appendpipe [|stats count | where count=0]</query>
+        </search>
+        <option name="rangeColors">["0x555","0x65a637"]</option>
+        <option name="rangeValues">[0]</option>
+        <option name="underLabel">ENVIRONMENTS</option>
+        <option name="useColors">1</option>
+      </single>
+      <single>
+        <search base="baseOverviewSearch">
+          <query>| search request.api_endpoint="user/farms" | fields count | appendpipe [|stats count | where count=0]</query>
+        </search>
+        <option name="underLabel">FARMS</option>
+        <option name="drilldown">all</option>
+        <option name="rangeColors">["0x6db7c6","0x6db7c6"]</option>
+        <option name="rangeValues">[1]</option>
+        <option name="useColors">1</option>
+        <drilldown>
+          <link>farms</link>
+        </drilldown>
+      </single>
+      <single>
+        <search base="baseOverviewSearch">
+          <query>| search request.api_endpoint="user/roles" | fields count | appendpipe [|stats count | where count=0]</query>
+        </search>
+        <option name="underLabel">USER ROLES</option>
+        <option name="drilldown">all</option>
+        <option name="rangeColors">["0x6db7c6","0x6db7c6"]</option>
+        <option name="rangeValues">[1]</option>
+        <option name="useColors">1</option>
+        <drilldown>
+          <link>roles</link>
+        </drilldown>
+      </single>
+      <single>
+        <search base="baseOverviewSearch">
+          <query>| search request.api_endpoint="user/farms/farm-roles" | fields count | appendpipe [|stats count | where count=0]</query>
+        </search>
+        <option name="underLabel">FARM ROLES</option>
+        <option name="drilldown">all</option>
+        <option name="rangeColors">["0x6db7c6","0x6db7c6"]</option>
+        <option name="rangeValues">[1]</option>
+        <option name="useColors">1</option>
+        <drilldown>
+          <link>farm_roles</link>
+        </drilldown>
+      </single>
+      <single>
+        <search base="baseOverviewSearch">
+          <query>| search request.api_endpoint="user/images" | fields count | appendpipe [|stats count | where count=0]</query>
+        </search>
+        <option name="underLabel">IMAGES</option>
+        <option name="drilldown">all</option>
+        <option name="rangeColors">["0x6db7c6","0x6db7c6"]</option>
+        <option name="rangeValues">[1]</option>
+        <option name="useColors">1</option>
+        <drilldown>
+          <link>images</link>
+        </drilldown>
+      </single>
+      <single>
+        <search base="baseOverviewSearch">
+          <query>| search request.api_endpoint="user/servers" | fields count | appendpipe [|stats count | where count=0]</query>
+        </search>
+        <option name="underLabel">SERVERS</option>
+        <option name="drilldown">all</option>
+        <option name="rangeColors">["0x6db7c6","0x6db7c6"]</option>
+        <option name="rangeValues">[1]</option>
+        <option name="useColors">1</option>
+        <drilldown>
+          <link>servers</link>
+        </drilldown>
+      </single>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table>
+        <title>Environments</title>
+        <search>
+          <query>index=scalr sourcetype=scalr request.api_endpoint="account/environments" 
+| dedup response.id 
+| table response.id, response.name, response.status, response.added 
+| sort response.id 
+| rename response.id as envId, response.name as Name, response.status as Status, response.added as "Date Added"</query>
+          <earliest>$field_time.earliest$</earliest>
+          <latest>$field_time.latest$</latest>
+        </search>
+        <option name="count">5</option>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+    <panel>
+      <table>
+        <title>Cloud Credentials</title>
+        <search>
+          <query>index=scalr sourcetype=scalr request.api_endpoint="account/cloud-credentials" 
+| dedup response.id 
+| table response.id, response.name, response.cloudCredentialsType, response.scope, response.status 
+| sort response.id 
+| rename response.* as *</query>
+          <earliest>$field_time.earliest$</earliest>
+          <latest>$field_time.latest$</latest>
+        </search>
+        <option name="count">5</option>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table>
+        <title>User Cost Centers</title>
+        <search>
+          <query>index=scalr sourcetype=scalr request.api_endpoint="user/cost-centers" 
+| dedup response.id 
+| table response.id, response.name, response.billingCode 
+| rename response.id as costCenterId, response.name as Name, response.billingCode as BillingCode</query>
+          <earliest>$field_time.earliest$</earliest>
+          <latest>$field_time.latest$</latest>
+        </search>
+        <option name="count">5</option>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+    <panel>
+      <table>
+        <title>User Projects</title>
+        <search>
+          <query>index=scalr sourcetype=scalr request.api_endpoint="user/projects" 
+| dedup response.id 
+| table response.id, response.name, response.leadEmail, response.billingCode, response.costCenter.id 
+| rename response.id as projectId, response.name as Name, response.leadEmail as LeadEmail, response.billingCode as BillingCode, response.costCenter.id as costCenterId</query>
+          <earliest>$field_time.earliest$</earliest>
+          <latest>$field_time.latest$</latest>
+        </search>
+        <option name="count">5</option>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table>
+        <title>Account Teams</title>
+        <search>
+          <query>index=scalr sourcetype=scalr request.api_endpoint="account/teams" 
+| dedup response.id 
+| table response.id, response.name, response.defaultAclRole.id 
+| join response.defaultAclRole.id 
+    [ search index=scalr sourcetype=scalr request.api_endpoint="account/acl-roles" 
+    | table response.id, response.name, response.baseRole 
+    | rename response.id as response.defaultAclRole.id, response.name as aclRole, response.baseRole as baseRole] 
+| rename response.id as teamId, response.name as TeamName 
+| sort teamId
+| fields - response.defaultAclRole.id</query>
+          <earliest>$field_time.earliest$</earliest>
+          <latest>$field_time.latest$</latest>
+        </search>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <event>
+        <title>Recent Scalr related Errors in splunkd Logs</title>
+        <search>
+          <query>index=_internal sourcetype=splunkd log_level=ERROR scalr | head 50</query>
+          <earliest>$field_time.earliest$</earliest>
+          <latest>$field_time.latest$</latest>
+        </search>
+        <option name="list.drilldown">none</option>
+        <option name="raw.drilldown">none</option>
+        <option name="type">raw</option>
+      </event>
+    </panel>
+  </row>
+</form>
