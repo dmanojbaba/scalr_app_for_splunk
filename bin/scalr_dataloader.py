@@ -184,7 +184,7 @@ def main():
            sys.stderr.write("DATALOADER_SCRIPT_ERROR - API Key NOT received from splunkd. Please set key in scalr.conf\n")
            exit(2)
         if api_secret == None:
-           sys.stderr.write("DATALOADER_SCRIPT_ERROR - API Secret NOT received from splunkd. Please set secret in scalr.conf\n")
+           sys.stderr.write("DATALOADER_SCRIPT_ERROR - API Secret NOT received from splunkd. Please set secret in passwords.conf\n")
            exit(2)
 
         api_client = ScalrApiClient(api_url.rstrip("/"), api_key, api_secret)
